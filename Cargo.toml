@@ -1,0 +1,43 @@
+[package]
+name = "lime-model-extractors"
+version = "0.1.0"
+edition = "2024"
+autotests = false
+authors = ["LiME Contributors"]
+license = "MIT"
+description = "Pure arrival pattern tracking algorithms for real-time task model extraction"
+repository = "https://github.com/LiME-org/lime-model-extractors"
+keywords = ["real-time", "scheduling", "arrival-curve", "sporadic"]
+categories = ["algorithms", "science"]
+
+[dependencies]
+thiserror = "2"
+
+[dev-dependencies]
+gungraun = "0.17.2"
+indicatif = "0.18"
+rayon = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+similar-asserts = "2"
+
+[[test]]
+name = "periodic_traces_parity"
+path = "tests/periodic_traces_parity.rs"
+
+[[test]]
+name = "sporadic_traces_parity"
+path = "tests/sporadic_traces_parity.rs"
+
+[[bench]]
+name = "bench_sporadic"
+harness = false
+path = "tests/bench_sporadic.rs"
+
+[[bench]]
+name = "bench_periodic"
+harness = false
+path = "tests/bench_periodic.rs"
+
+[profile.bench]
+debug = true

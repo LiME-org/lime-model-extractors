@@ -1,0 +1,92 @@
+variables:
+  UV_VERSION: "0.10.2"
+  TEST_ALL_TRACES: "1"
+  UV_LINK_MODE: copy
+  CARGO_TERM_COLOR: always
+
+test:
+  image: rust:bookworm
+  parallel:
+    matrix:
+      - RUST_TOOLCHAIN: stable
+      - RUST_TOOLCHAIN: beta
+  script:
+    - rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
+    - rustup default "$RUST_TOOLCHAIN"
+    - cargo test
+
+lint:
+  image: rust:bookworm
+  script:
+    - rustup component add rustfmt clippy
+    - cargo fmt --check
+    - cargo clippy --all-targets --all-features -- -D warnings
+
+parity:
+  image: rust:bookworm
+  script:
+    - apt-get update
+    - apt-get install -y curl git python3 python3-venv ca-certificates
+    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.mpi-sws.org/".insteadOf "https://gitlab.mpi-sws.org/"
+    - curl -LsSf https://astral.sh/uv/install.sh | env UV_VERSION="$UV_VERSION" sh
+    - export PATH="$HOME/.local/bin:$PATH"
+    - git clone --depth 1 https://gitlab.mpi-sws.org/LiME/py-rt-model-inference.git .ci/py-rt-model-inference
+    - cd .ci/py-rt-model-inference
+    - uv sync --dev
+    - cd ../..
+    - PY_RT_MODEL_INFERENCE_DIR="$CI_PROJECT_DIR/.ci/py-rt-model-inference" cargo test --test periodic_traces_parity --test sporadic_traces_parity -- --nocapture
+
+.bench_template:
+  image: rust:bookworm
+  variables:
+    GUNGRAUN_ALLOW_ASLR: "yes"
+    BENCH_TARGET: ""
+    BENCH_SAVE_ARTIFACTS: "0"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: on_success
+      variables:
+        BENCH_SAVE_ARTIFACTS: "1"
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+      when: on_success
+    - when: never
+  script:
+    - apt-get update
+    - apt-get install -y curl unzip git ca-certificates jq valgrind
+    - |
+      version=$(cargo metadata --format-version=1 | \
+        jq -r '.packages[] | select(.name == "gungraun") | .version')
+      cargo install --locked --version "$version" gungraun-runner
+    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.mpi-sws.org/".insteadOf "https://gitlab.mpi-sws.org/"
+    - git clone --depth 1 https://gitlab.mpi-sws.org/LiME/py-rt-model-inference.git .ci/py-rt-model-inference
+    - mkdir -p .ci/baseline-download
+    - |
+      BASELINE_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/artifacts/${CI_DEFAULT_BRANCH}/download?job=${CI_JOB_NAME}"
+      if curl --location --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --output .ci/baseline-download/baseline.zip "$BASELINE_URL"; then
+        unzip -o .ci/baseline-download/baseline.zip "target/gungraun/*" -d .
+      else
+        echo "No prior bench artifact baseline available for ${CI_DEFAULT_BRANCH}; continuing without baseline."
+      fi
+    - PY_RT_MODEL_INFERENCE_DIR="$CI_PROJECT_DIR/.ci/py-rt-model-inference" cargo bench --bench "$BENCH_TARGET"
+  after_script:
+    - |
+      if [ "$BENCH_SAVE_ARTIFACTS" != "1" ]; then
+        rm -rf target/gungraun
+      fi
+  artifacts:
+    when: always
+    expire_in: 1 months
+    paths:
+      - target/gungraun
+
+bench_sporadic:
+  extends: .bench_template
+  allow_failure: true
+  variables:
+    BENCH_TARGET: bench_sporadic
+
+bench_periodic:
+  extends: .bench_template
+  allow_failure: true
+  variables:
+    BENCH_TARGET: bench_periodic
