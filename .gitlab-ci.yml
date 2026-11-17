@@ -91,3 +91,9 @@ bench_periodic:
   allow_failure: true
   variables:
     BENCH_TARGET: bench_periodic
+
+bench_suspension:
+  extends: .bench_template
+  allow_failure: true
+  variables:
+    BENCH_TARGET: bench_suspension

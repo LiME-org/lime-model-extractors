@@ -44,5 +44,10 @@ name = "bench_periodic"
 harness = false
 path = "tests/bench_periodic.rs"
 
+[[bench]]
+name = "bench_suspension"
+harness = false
+path = "tests/bench_suspension.rs"
+
 [profile.bench]
 debug = true
