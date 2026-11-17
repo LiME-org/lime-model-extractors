@@ -6,7 +6,7 @@ For a clean Python implementation of the same algorithms, see [py-rt-model-infer
 
 ## Implemented Algorithms
 
-The crate implements the arrival-model inference algorithms used by LiME.
+The crate implements arrival-model, resource-use, and self-suspension-model inference algorithms used by LiME.
 
 For _certain_ (i.e., exact) release times:
 
@@ -22,6 +22,17 @@ For _uncertain_ release windows:
 - `infer_certain_fit_periodic_model`: infer a periodic model from a sequence of release windows that _fully covers_ every release window.
 - `infer_possible_fit_periodic_model`: infer a periodic model from a sequence of release windows that _intersects_ every release window.
 
+For per-job resource-consumption observations:
+
+- `infer_max_resource_use` / `infer_min_resource_use`: infer maximum/minimum cumulative resource use over consecutive jobs, including WCET(n) and BCET(n) for execution-time observations. Entry `n` describes `n` jobs; optional `nmax` limits the window length.
+
+For per-job self-suspension observations:
+
+- `infer_max_suspension_model` / `infer_min_suspension_model`: infer component-wise maximum/minimum suspension counts and durations over consecutive jobs. Entry `n` describes `n` jobs; optional `nmax` limits the window length.
+- `infer_segmented_suspension_model`: infer ordered per-segment suspension and execution bounds.
+- `infer_bos_suspension_model`: infer a bag of segment vectors (BOS) model, consolidating models when the optional `max_models` limit is reached.
+- `basic_from_segmented_observation` / `basic_from_segmented_model`: derive basic counts and durations. Initial release jitter contributes to duration but does not count as a separate suspension.
+
 `Instant` and `Duration` are the crate's shared aliases for timestamps and interval lengths. `time::ReleaseWindow` represents an uncertain release timestamp as an inclusive interval `[lo, hi]`. For example, `ReleaseWindow::new(100, 120)` means the release happened sometime between `100` and `120`, while `ReleaseWindow::new(100, 100)` encodes an exact release time.
 
 The above APIs are "one-shot" procedures that consume all given input in one go and return a model as a result. Additionally, the crate provides _streaming extractor_ variants of all these algorithms, which consume input incrementally and can be queried at any time to obtain the model inferred _so far_.
@@ -32,6 +43,9 @@ The available streaming extractors are:
 - `DeltaMinExtractor`, `DeltaMinHiExtractor`, and `DeltaMinLoExtractor`
 - `DeltaMaxExtractor`, `DeltaMaxHiExtractor`, and `DeltaMaxLoExtractor`
 - `PeriodicExtractor`, `CertainFitPeriodicExtractor`, and `PossibleFitPeriodicExtractor`
+- `MaxResourceUseExtractor`, `MinResourceUseExtractor`
+- `MaxSuspensionModelExtractor`, `MinSuspensionModelExtractor`
+- `SegmentedSuspensionModelExtractor`, `BosSuspensionModelExtractor`
 
 ### Streaming Extractor API
 
@@ -51,6 +65,12 @@ The exact constructor and return types depend on the extractor family:
   `extractors::DeltaMinHiExtractor::new(nmax)`, `extractors::DeltaMinLoExtractor::new(nmax)`, `extractors::DeltaMaxHiExtractor::new(nmax)`, `extractors::DeltaMaxLoExtractor::new(nmax)`, `feed(...) -> Result<(), UncertainSporadicError>`, `current_model() -> Vec<Duration>`
 - Periodic extractors:
   `extractors::PeriodicExtractor::new()`, `extractors::PeriodicExtractor::with_config(config)`, `extractors::CertainFitPeriodicExtractor::new()`, `extractors::PossibleFitPeriodicExtractor::new()`, `feed(...)`, `current_model() -> Option<PeriodicModel>`
+- Resource-use extractors:
+  `extractors::MaxResourceUseExtractor::new(nmax)`, `extractors::MinResourceUseExtractor::new(nmax)`, `feed(...)`, `current_model() -> Vec<ResourceAmount>`
+- Basic suspension extractors:
+  `extractors::MaxSuspensionModelExtractor::new(nmax)`, `extractors::MinSuspensionModelExtractor::new(nmax)`, `feed(...)`, `current_model() -> Vec<BasicSuspensionModel>`
+- Segmented and BOS suspension extractors:
+  `extractors::SegmentedSuspensionModelExtractor::new(max_segments)`, `extractors::BosSuspensionModelExtractor::new(max_segments, max_models)`, `feed(...) -> Result<(), SuspensionError>`, `current_model() -> Option<SegmentedSuspensionModel>` or `Option<BagOfSegmentsModel>`
 
 The periodic extractors accept `PeriodicConfig`. The delta extractors accept an optional `nmax` bound. Exact-release extractors consume `Instant` release times; uncertain extractors consume `ReleaseWindow` values.
 
@@ -131,6 +151,42 @@ assert_eq!(extractor.current_model().map(|m| m.period), Some(13));
 ```
 
 
+Infer WCET(n) from per-job execution times:
+
+```rust
+use lime_model_extractors::{infer_max_resource_use, extractors::MaxResourceUseExtractor};
+
+let execution_times = [3, 1, 5, 1, 4];
+assert_eq!(infer_max_resource_use(execution_times, Some(3)).unwrap(), vec![0, 5, 6, 10]);
+
+let mut wcet = MaxResourceUseExtractor::new(Some(3)).unwrap();
+wcet.feed(execution_times[..2].iter().copied());
+wcet.feed(execution_times[2..].iter().copied());
+assert_eq!(wcet.current_model(), vec![0, 5, 6, 10]);
+```
+
+Infer suspension bounds from segmented jobs:
+
+```rust
+use lime_model_extractors::{
+    basic_from_segmented_observation, infer_max_suspension_model,
+    extractors::BosSuspensionModelExtractor,
+};
+
+let jobs = [vec![(0, 10), (5, 3)], vec![(2, 8), (7, 4)]];
+let basic = infer_max_suspension_model(
+    jobs.iter().map(|job| basic_from_segmented_observation(job)),
+    Some(1),
+).unwrap();
+assert_eq!(basic[1].cumulative_duration, 9);
+
+let mut bos = BosSuspensionModelExtractor::new(Some(2), Some(4)).unwrap();
+bos.feed(&jobs).unwrap();
+let models = bos.into_model().unwrap();
+assert_eq!(models.len(), 2);
+```
+
+
 ## Attribution
 
 When using these algorithms for academic work, please cite the following two papers:
@@ -157,7 +213,8 @@ cargo build
 Run the unit tests and doctests:
 
 ```bash
-cargo test
+cargo test --lib
+cargo test --doc
 ```
 
 ### Reference Parity Tests
@@ -176,7 +233,7 @@ cd ../..
 Run the parity tests:
 
 ```bash
-cargo test --test periodic_traces_parity --test sporadic_traces_parity -- --nocapture
+cargo test --test periodic_traces_parity --test sporadic_traces_parity --test suspension_parity -- --nocapture
 ```
 
 To run parity checks against all trace files included in the repository:
@@ -187,8 +244,9 @@ cargo test --test periodic_traces_parity --test sporadic_traces_parity -- --noca
 ```
 
 If `PY_RT_MODEL_INFERENCE_DIR` is unset, the tests look for `.ci/py-rt-model-inference`. Set the variable only if you want to use a different checkout location.
+The parity tests fail if the reference checkout or virtualenv is missing.
 
-The parity drivers and Rust-side trace processing both support configurable parallelism:
+The arrival-trace parity drivers and Rust-side trace processing support configurable parallelism:
 
 - `PARITY_DRIVER_WORKERS=<n|auto>` controls the Python parity drivers.
 - `RAYON_NUM_THREADS=<n>` controls Rust-side trace validation.

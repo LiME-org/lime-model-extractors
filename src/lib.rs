@@ -4,6 +4,7 @@
 //! uncertain-sporadic model inference logic from LiME's Python reference
 //! implementation. It works with discrete timestamps and release
 //! windows and has no framework dependencies.
+//! It also infers resource-use and self-suspension models from per-job observations.
 //!
 //! # Example
 //!
