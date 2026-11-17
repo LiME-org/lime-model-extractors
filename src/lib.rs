@@ -36,7 +36,9 @@ pub mod extractors {
     pub use crate::certain_periodic::PeriodicExtractor;
     pub use crate::certain_sporadic::{DeltaMaxExtractor, DeltaMinExtractor, SporadicExtractor};
     pub use crate::resource_use::{MaxResourceUseExtractor, MinResourceUseExtractor};
-    pub use crate::suspension::{MaxSuspensionModelExtractor, MinSuspensionModelExtractor};
+    pub use crate::suspension::{
+        MaxSuspensionModelExtractor, MinSuspensionModelExtractor, SegmentedSuspensionModelExtractor,
+    };
     pub use crate::uncertain_periodic::{
         CertainFitPeriodicExtractor, PossibleFitPeriodicExtractor,
     };
@@ -61,8 +63,10 @@ pub use resource_use::{
     ResourceAmount, ResourceUseError, infer_max_resource_use, infer_min_resource_use,
 };
 pub use suspension::{
-    BasicJobSuspensionBehavior, BasicSuspensionModel, SuspensionError, infer_max_suspension_model,
-    infer_min_suspension_model,
+    BasicJobSuspensionBehavior, BasicSuspensionModel, ObservedSegment, Segment,
+    SegmentedJobSuspensionBehavior, SegmentedSuspensionModel, SuspensionError,
+    basic_from_segmented_model, basic_from_segmented_observation, infer_max_suspension_model,
+    infer_min_suspension_model, infer_segmented_suspension_model,
 };
 pub use uncertain_periodic::{
     UncertainPeriodicError, infer_certain_fit_periodic_model, infer_possible_fit_periodic_model,
