@@ -85,8 +85,7 @@ fn periodic_extract_exact(traces: Vec<LoadedTrace>) -> usize {
         extractor.feed(releases.iter().copied());
         work += extractor
             .current_model()
-            .map(|model| model.period as usize)
-            .unwrap_or_default();
+            .map_or_default(|model| model.period as usize);
     }
     black_box(work)
 }
@@ -101,8 +100,7 @@ fn periodic_extract_certain_fit(traces: Vec<LoadedTrace>) -> usize {
         extractor.feed(windows.iter().copied());
         work += extractor
             .current_model()
-            .map(|model| model.period as usize)
-            .unwrap_or_default();
+            .map_or_default(|model| model.period as usize);
     }
     black_box(work)
 }
@@ -117,8 +115,7 @@ fn periodic_extract_possible_fit(traces: Vec<LoadedTrace>) -> usize {
         extractor.feed(windows.iter().copied());
         work += extractor
             .current_model()
-            .map(|model| model.period as usize)
-            .unwrap_or_default();
+            .map_or_default(|model| model.period as usize);
     }
     black_box(work)
 }
