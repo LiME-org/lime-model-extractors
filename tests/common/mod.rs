@@ -26,11 +26,19 @@ pub fn python_reference_dir() -> PathBuf {
     }
 }
 
-pub fn python_reference_python(reference_dir: &Path) -> Option<PathBuf> {
+pub fn python_reference_python(reference_dir: &Path) -> PathBuf {
+    assert!(
+        reference_dir.join("pyproject.toml").is_file(),
+        "Python reference checkout is missing at {}; see README.md for parity setup",
+        reference_dir.display()
+    );
     ["python3", "python"]
         .iter()
         .map(|name| reference_dir.join(".venv/bin").join(name))
         .find(|path| path.exists())
+        .expect(
+            "Python reference virtualenv is missing; run uv sync --dev in the reference checkout",
+        )
 }
 
 pub fn python_reference_payload<T: DeserializeOwned>(

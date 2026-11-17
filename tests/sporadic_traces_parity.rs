@@ -49,26 +49,11 @@ struct TracePayload {
 #[test]
 fn sporadic_traces_match_python_reference() {
     let reference_dir = python_reference_dir();
-    let python_path = match python_reference_python(&reference_dir) {
-        Some(path) => path,
-        None => {
-            eprintln!(
-                "skipping sporadic traces parity test: reference virtualenv is not initialized"
-            );
-            return;
-        }
-    };
+    let python_path = python_reference_python(&reference_dir);
     let driver_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join("drivers")
         .join("sporadic_traces_parity_driver.py");
-
-    if !reference_dir.join("pyproject.toml").exists() {
-        eprintln!(
-            "skipping sporadic traces parity test: Python reference checkout is not available"
-        );
-        return;
-    }
 
     assert!(
         driver_path.exists(),

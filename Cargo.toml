@@ -30,6 +30,10 @@ path = "tests/periodic_traces_parity.rs"
 name = "sporadic_traces_parity"
 path = "tests/sporadic_traces_parity.rs"
 
+[[test]]
+name = "suspension_parity"
+path = "tests/suspension_parity.rs"
+
 [[bench]]
 name = "bench_sporadic"
 harness = false

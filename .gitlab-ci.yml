@@ -13,7 +13,8 @@ test:
   script:
     - rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
     - rustup default "$RUST_TOOLCHAIN"
-    - cargo test
+    - cargo test --lib
+    - cargo test --doc
 
 lint:
   image: rust:bookworm
@@ -34,7 +35,7 @@ parity:
     - cd .ci/py-rt-model-inference
     - uv sync --dev
     - cd ../..
-    - PY_RT_MODEL_INFERENCE_DIR="$CI_PROJECT_DIR/.ci/py-rt-model-inference" cargo test --test periodic_traces_parity --test sporadic_traces_parity -- --nocapture
+    - PY_RT_MODEL_INFERENCE_DIR="$CI_PROJECT_DIR/.ci/py-rt-model-inference" cargo test --test periodic_traces_parity --test sporadic_traces_parity --test suspension_parity -- --nocapture
 
 .bench_template:
   image: rust:bookworm
