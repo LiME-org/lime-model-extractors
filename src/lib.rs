@@ -28,6 +28,7 @@ mod periodic_core;
 mod release_window;
 mod resource_use;
 mod sporadic_core;
+mod suspension;
 mod uncertain_periodic;
 mod uncertain_sporadic;
 
@@ -35,6 +36,7 @@ pub mod extractors {
     pub use crate::certain_periodic::PeriodicExtractor;
     pub use crate::certain_sporadic::{DeltaMaxExtractor, DeltaMinExtractor, SporadicExtractor};
     pub use crate::resource_use::{MaxResourceUseExtractor, MinResourceUseExtractor};
+    pub use crate::suspension::{MaxSuspensionModelExtractor, MinSuspensionModelExtractor};
     pub use crate::uncertain_periodic::{
         CertainFitPeriodicExtractor, PossibleFitPeriodicExtractor,
     };
@@ -57,6 +59,10 @@ pub use certain_sporadic::{
 };
 pub use resource_use::{
     ResourceAmount, ResourceUseError, infer_max_resource_use, infer_min_resource_use,
+};
+pub use suspension::{
+    BasicJobSuspensionBehavior, BasicSuspensionModel, SuspensionError, infer_max_suspension_model,
+    infer_min_suspension_model,
 };
 pub use uncertain_periodic::{
     UncertainPeriodicError, infer_certain_fit_periodic_model, infer_possible_fit_periodic_model,
