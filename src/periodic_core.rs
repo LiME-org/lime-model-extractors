@@ -119,8 +119,10 @@ impl<F: FitMode> Batch<F> {
     fn clean_slice_and_mean_gap(&self) -> (&[(usize, F::Observation)], f64) {
         let gaps: Vec<_> = self
             .0
-            .windows(2)
-            .map(|window| F::gap_anchor(window[1].1).saturating_sub(F::gap_anchor(window[0].1)))
+            .array_windows()
+            .map(|[(_, previous), (_, next)]| {
+                F::gap_anchor(*next).saturating_sub(F::gap_anchor(*previous))
+            })
             .collect();
 
         let (start, end) = first_and_last_nonoutlier(&gaps);
