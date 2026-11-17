@@ -45,6 +45,8 @@ impl From<ObservedSegment> for Segment {
 
 /// Upper bounds indexed by segment position within a job.
 pub type SegmentedSuspensionModel = Vec<Segment>;
+/// Alternative segmented models that together cover the observed jobs.
+pub type BagOfSegmentsModel = Vec<SegmentedSuspensionModel>;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum SuspensionError {
@@ -54,6 +56,8 @@ pub enum SuspensionError {
     InvalidMaxSegments,
     #[error("job has {observed} segments, exceeding the limit of {limit}")]
     SegmentLimitExceeded { observed: usize, limit: usize },
+    #[error("max_models must be positive")]
+    InvalidMaxModels,
     #[error("each observation must contain at least one segment")]
     EmptyObservation,
     #[error("segment must have positive suspension or execution time")]
