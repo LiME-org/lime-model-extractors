@@ -145,7 +145,7 @@ impl<F: FitMode> Batch<F> {
         let mut optimum = None;
 
         while high - low > 1 {
-            let mid = (high + low) / 2;
+            let mid = low.midpoint(high);
             let lower = PeriodicModel::from_observations::<F>(cleaned, mid);
             let upper = PeriodicModel::from_observations::<F>(cleaned, mid + 1);
 
