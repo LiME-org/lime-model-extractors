@@ -26,6 +26,7 @@ mod certain_periodic;
 mod certain_sporadic;
 mod periodic_core;
 mod release_window;
+mod resource_use;
 mod sporadic_core;
 mod uncertain_periodic;
 mod uncertain_sporadic;
@@ -33,6 +34,7 @@ mod uncertain_sporadic;
 pub mod extractors {
     pub use crate::certain_periodic::PeriodicExtractor;
     pub use crate::certain_sporadic::{DeltaMaxExtractor, DeltaMinExtractor, SporadicExtractor};
+    pub use crate::resource_use::{MaxResourceUseExtractor, MinResourceUseExtractor};
     pub use crate::uncertain_periodic::{
         CertainFitPeriodicExtractor, PossibleFitPeriodicExtractor,
     };
@@ -52,6 +54,9 @@ pub use certain_periodic::{PeriodicConfig, PeriodicError, PeriodicModel, infer_p
 pub use certain_sporadic::{
     SporadicError, infer_delta_max, infer_delta_min, infer_sporadic_model, max_releases,
     min_releases,
+};
+pub use resource_use::{
+    ResourceAmount, ResourceUseError, infer_max_resource_use, infer_min_resource_use,
 };
 pub use uncertain_periodic::{
     UncertainPeriodicError, infer_certain_fit_periodic_model, infer_possible_fit_periodic_model,
